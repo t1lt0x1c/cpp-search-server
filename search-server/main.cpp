@@ -64,8 +64,9 @@ public:
 
     void AddDocument(int document_id, const string& document) {
         ++document_count_;
-        for (const string& word : SplitIntoWordsNoStop(document)) {
-            word_to_document_freqs_[word][document_id] += 1 / static_cast<double>(SplitIntoWordsNoStop(document).size());
+        const vector<string> no_stop_words = SplitIntoWordsNoStop(document);
+        for (const string& word : no_stop_words) {
+            word_to_document_freqs_[word][document_id] += 1 / static_cast<double>(no_stop_words.size());
         }
     }
 
@@ -89,6 +90,12 @@ private:
         set<string> minus_words;
     };
 
+    struct Qword {
+        string value;
+        bool minus;
+        bool stop;
+    };
+
     map<string, map<int, double>> word_to_document_freqs_;
 
     set<string> stop_words_;
@@ -109,15 +116,31 @@ private:
         return words;
     }
 
+    Qword ParseQword(string text) const {
+        Qword word;
+        word.minus = false;
+        if (text[0] == '-') {
+            word.value = text.substr(1);
+            word.minus = true;
+        }
+        else {
+            word.value = text;
+        }
+        word.stop = IsStopWord(text);
+        return word;
+    }
+
     Query ParseQuery(const string& text) const {
         Query query_words;
-        for (string& word : SplitIntoWordsNoStop(text)) {
-            if (word[0] == '-') {
-                word = word.substr(1);
-                (query_words.minus_words).insert(word);
-            }
-            else {
-                (query_words.plus_words).insert(word);
+        for (const string& word : SplitIntoWords(text)) {
+            const Qword qword = ParseQword(word);
+            if (!qword.stop) {
+                if (qword.minus) {
+                    (query_words.minus_words).insert(qword.value);
+                }
+                else {
+                    (query_words.plus_words).insert(qword.value);
+                }
             }
         }
         return query_words;
@@ -127,9 +150,8 @@ private:
         vector<Document> matched_documents;
         map<int, double> res;
         for (const string& word : query_words.plus_words) {
-            double itf = 0;
             if (word_to_document_freqs_.count(word)) {
-                itf = log(static_cast<double>(document_count_) / static_cast<double>(word_to_document_freqs_.at(word).size()));
+                double itf = log(static_cast<double>(document_count_) / static_cast<double>(word_to_document_freqs_.at(word).size()));
                 for (const auto& id : word_to_document_freqs_.at(word)) {
                     res[id.first] += (itf * id.second);
                 }
