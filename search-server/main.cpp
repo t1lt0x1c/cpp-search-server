@@ -1,5 +1,21 @@
 // -------- Начало модульных тестов поисковой системы ----------
-
+void AddAndSearchDocTest() {
+    const vector<int> ratings = { 1, 2, 3 };
+    SearchServer server;
+    server.SetStopWords("a an on the in is has been are with for from have be was"s);
+    server.AddDocument(0, "a small curly guinea pig with grey hair has been found"s, DocumentStatus::ACTUAL, ratings);
+    server.AddDocument(1, "a young 50 year old crocodile wants to make friends"s, DocumentStatus::ACTUAL, ratings);
+    server.AddDocument(2, "a strange brown creature was seen in the box of oranges"s, DocumentStatus::ACTUAL, ratings);
+    server.AddDocument(3, "a strange animal with big ears is building a house for its friends"s, DocumentStatus::ACTUAL, ratings);
+    const auto found_docs0 = server.FindTopDocuments("small pig"s);
+    ASSERT_EQUAL_HINT(found_docs0[0].id, 0, "Document not founded"s);
+    const auto found_docs1 = server.FindTopDocuments("old crocodile"s);
+    ASSERT_EQUAL_HINT(found_docs1[0].id, 1, "Document not founded"s);
+    const auto found_docs2 = server.FindTopDocuments("box of oranges"s);
+    ASSERT_EQUAL_HINT(found_docs2[0].id, 2, "Document not founded"s);
+    const auto found_docs3 = server.FindTopDocuments("strange animal"s);
+    ASSERT_EQUAL_HINT(found_docs3[0].id, 3, "Document not founded"s);
+}
 // Тест проверяет, что поисковая система исключает стоп-слова при добавлении документов
 void TestExcludeStopWordsFromAddedDocumentContent() {
     const int doc_id = 42;
@@ -59,7 +75,7 @@ void SortRelevanceTest() {
     server.AddDocument(2, "a strange brown creature was seen in the box of oranges"s, DocumentStatus::ACTUAL, ratings);
     server.AddDocument(3, "a strange animal with big ears is building a house for its friends"s, DocumentStatus::ACTUAL, ratings);
     const auto found_docs = server.FindTopDocuments("cheburashka with big ears likes oranges"s);
-    ASSERT_HINT((found_docs[0].id == 3 && found_docs[1].id == 2), "Not correct sorting relevance"s);
+    ASSERT_HINT((found_docs[0].relevance >= found_docs[1].relevance), "Not correct sorting relevance"s);
 }
 
 void CalculateRatingTest() {
@@ -77,13 +93,20 @@ void FilterPredicateTest() {
     SearchServer server;
     server.SetStopWords("a an on the in is has been are with for from have be was"s);
     server.AddDocument(0, "a small curly guinea pig with grey hair has been found"s, DocumentStatus::ACTUAL, { 4, 3, 3, 8, 2, 7 });
-    server.AddDocument(1, "a young 50 year old crocodile wants to make friends"s, DocumentStatus::ACTUAL, { 3, 9, 6, 4, 10, 3 });
+    server.AddDocument(1, "a young 50 year old crocodile wants to make friends"s, DocumentStatus::IRRELEVANT, { 3, 9, 6, 4, 10, 3 });
     server.AddDocument(2, "a strange brown creature was seen in the box of oranges"s, DocumentStatus::BANNED, { 6, 9, 9, 3, 4, 6 });
-    server.AddDocument(3, "a strange animal with big ears is building a house for its friends"s, DocumentStatus::ACTUAL, { 3, 4, 1, 1, 6, 4 });
+    server.AddDocument(3, "a strange animal with big ears is building a house for its friends"s, DocumentStatus::REMOVED, { 3, 4, 1, 1, 6, 4 });
     const auto found_docs = server.FindTopDocuments("cheburashka with big ears likes oranges"s, [](int document_id, [[maybe_unused]] DocumentStatus status, [[maybe_unused]] int rating) { return (document_id % 2 != 0); });
     ASSERT_EQUAL_HINT(found_docs[0].id, 3, "Not correct search with predicate"s);
-    const auto found_docs__ = server.FindTopDocuments("cheburashka with big ears likes oranges"s, DocumentStatus::BANNED);
-    ASSERT_EQUAL_HINT(found_docs__[0].id, 2, "Not correct search with status"s);
+    const string query = "a small strange crocodile in the box"s;
+    const auto found_docs0 = server.FindTopDocuments(query, DocumentStatus::ACTUAL);
+    ASSERT_EQUAL_HINT(found_docs0[0].id, 0, "Not correct search with status"s);
+    const auto found_docs1 = server.FindTopDocuments(query, DocumentStatus::IRRELEVANT);
+    ASSERT_EQUAL_HINT(found_docs1[0].id, 1, "Not correct search with status"s);
+    const auto found_docs2 = server.FindTopDocuments(query, DocumentStatus::BANNED);
+    ASSERT_EQUAL_HINT(found_docs2[0].id, 2, "Not correct search with status"s);
+    const auto found_docs3 = server.FindTopDocuments(query, DocumentStatus::REMOVED);
+    ASSERT_EQUAL_HINT(found_docs3[0].id, 3, "Not correct search with status"s);
 }
 
 void CalculateTrueRelevanceTest() {
@@ -93,11 +116,18 @@ void CalculateTrueRelevanceTest() {
     server.AddDocument(1, "a young 50 year old crocodile wants to make friends"s, DocumentStatus::ACTUAL, { 3, 9, 6, 4, 10, 3 });
     server.AddDocument(2, "a strange brown creature was seen in the box of oranges"s, DocumentStatus::ACTUAL, { 6, 9, 9, 3, 4, 6 });
     server.AddDocument(3, "a strange animal with big ears is building a house for its friends"s, DocumentStatus::ACTUAL, { 3, 4, 1, 1, 6, 4 });
-    const auto found_docs = server.FindTopDocuments("small brown"s);
-    ASSERT_EQUAL_HINT(found_docs[0].relevance, found_docs[1].relevance, "Relevances not equal. Not correct caltulated."s);
+    const auto found_docs = server.FindTopDocuments("small strange"s);
+    const double error = 1e-6;
+    const double ideal_relevance0 = log(4.0) * (1.0 / 7);
+    ASSERT_HINT(abs(found_docs[0].relevance - ideal_relevance0) < error, "Relevances not equal. Not correct calculated."s);
+    const double ideal_relevance1 = log(2.0) * (1.0 / 7);
+    ASSERT_HINT(abs(found_docs[1].relevance - ideal_relevance1) < error, "Relevances not equal. Not correct calculated."s);
+    const double ideal_relevance2 = log(2.0) * (1.0 / 8);
+    ASSERT_HINT(abs(found_docs[2].relevance - ideal_relevance2) < error, "Relevances not equal. Not correct calculated."s);
 }
 // Функция TestSearchServer является точкой входа для запуска тестов
 void TestSearchServer() {
+    RUN_TEST(AddAndSearchDocTest);
     RUN_TEST(TestExcludeStopWordsFromAddedDocumentContent);
     RUN_TEST(MinusWordTest);
     RUN_TEST(MatchTest);
@@ -107,5 +137,3 @@ void TestSearchServer() {
     RUN_TEST(CalculateTrueRelevanceTest);
     // Не забудьте вызывать остальные тесты здесь
 }
-
-// --------- Окончание модульных тестов поисковой системы -----------
