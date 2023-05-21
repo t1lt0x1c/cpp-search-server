@@ -81,12 +81,13 @@ enum class DocumentStatus {
 
 class SearchServer {
 public:
-    inline static constexpr int INVALID_DOCUMENT_ID = -1;
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words)
         : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
         for (const string& word : stop_words_) {
-            if (!IsValidWord(word)) { throw invalid_argument("Special symbol"s); }
+            if (!ParseQueryWord(word)) {
+                throw invalid_argument("Special symbol"s);
+            }
         }
     }
 
@@ -94,40 +95,54 @@ public:
         : SearchServer(
             SplitIntoWords(stop_words_text))  // Invoke delegating constructor from string container
     {
-        if (!IsValidWord(stop_words_text)) { throw invalid_argument("Special symbol"s); }
+        if (!ParseQueryWord(stop_words_text)) {
+            throw invalid_argument("Special symbol"s);
+        }
     }
 
     void AddDocument(int document_id, const string& document, DocumentStatus status,
         const vector<int>& ratings) {
-        if (document_id < 0) { throw invalid_argument("ID < 0"s); }
-        if (documents_.count(document_id) > 0) { throw invalid_argument("Server has doc with this id already"s); }
-
+        if (document_id < 0) {
+            throw invalid_argument("ID < 0"s);
+        }
+        if (documents_.count(document_id) > 0) {
+            throw invalid_argument("Server has doc with this id already"s);
+        }
         const vector<string> words = SplitIntoWordsNoStop(document);
         const double inv_word_count = 1.0 / words.size();
         for (const string& word : words) {
-            if (!IsValidWord(word)) { throw invalid_argument("Special symbol"s); }
+            if (!ParseQueryWord(word)) {
+                throw invalid_argument("Special symbol"s);
+            }
             word_to_document_freqs_[word][document_id] += inv_word_count;
         }
         documents_.emplace(document_id, DocumentData{ ComputeAverageRating(ratings), status });
+        doc_id.push_back(document_id);
     }
 
     template <typename DocumentPredicate>
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
-        if (!CheckQuery(raw_query)) { throw invalid_argument(""s); }
-        const Query query = ParseQuery(raw_query);
-        auto matched_documents = FindAllDocuments(query, document_predicate);
-
-        sort(matched_documents.begin(), matched_documents.end(),
-            [](const Document& lhs, const Document& rhs) {
-                if (abs(lhs.relevance - rhs.relevance) < ERROR_) {
-                    return lhs.rating > rhs.rating;
-                }
-                return lhs.relevance > rhs.relevance;
-            });
-        if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
-            matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
+        if (!CheckMinus(raw_query)) {
+            throw invalid_argument("No correct using '-'"s);
         }
-        return matched_documents;
+        if (const auto query = ParseQuery(raw_query)) {
+            auto matched_documents = FindAllDocuments(*query, document_predicate);
+
+            sort(matched_documents.begin(), matched_documents.end(),
+                [](const Document& lhs, const Document& rhs) {
+                    if (abs(lhs.relevance - rhs.relevance) < ERROR_) {
+                        return lhs.rating > rhs.rating;
+                    }
+                    return lhs.relevance > rhs.relevance;
+                });
+            if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
+                matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
+            }
+            return matched_documents;
+        }
+        else {
+            throw invalid_argument("Special Symbols"s);
+        }
     }
 
     vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus status) const {
@@ -146,39 +161,37 @@ public:
     }
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const {
-        if (!CheckQuery(raw_query)) { throw invalid_argument(""s); }
-        const Query query = ParseQuery(raw_query);
+        if (!CheckMinus(raw_query)) {
+            throw invalid_argument("No correct using '-'"s);
+        }
         vector<string> matched_words;
-        for (const string& word : query.plus_words) {
-            if (word_to_document_freqs_.count(word) == 0) {
-                continue;
+        if (const auto query = ParseQuery(raw_query)) {
+            for (const string& word : query->plus_words) {
+                if (word_to_document_freqs_.count(word) == 0) {
+                    continue;
+                }
+                if (word_to_document_freqs_.at(word).count(document_id)) {
+                    matched_words.push_back(word);
+                }
             }
-            if (word_to_document_freqs_.at(word).count(document_id)) {
-                matched_words.push_back(word);
+            for (const string& word : query->minus_words) {
+                if (word_to_document_freqs_.count(word) == 0) {
+                    continue;
+                }
+                if (word_to_document_freqs_.at(word).count(document_id)) {
+                    matched_words.clear();
+                    break;
+                }
             }
         }
-        for (const string& word : query.minus_words) {
-            if (word_to_document_freqs_.count(word) == 0) {
-                continue;
-            }
-            if (word_to_document_freqs_.at(word).count(document_id)) {
-                matched_words.clear();
-                break;
-            }
+        else {
+            throw invalid_argument("Special Symbols"s);
         }
         return { matched_words, documents_.at(document_id).status };
     }
 
     int GetDocumentId(int index) const {
-        if (index < 0 || index > GetDocumentCount()) { throw out_of_range("Not correct index"); }
-        int n = 0;
-        for (const auto d : documents_) {
-            if (n == index) {
-                return d.first;
-            }
-            n++;
-        }
-        return SearchServer::INVALID_DOCUMENT_ID;
+        return doc_id.at(index);
     }
 
 private:
@@ -189,6 +202,7 @@ private:
     const set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
+    vector<int> doc_id;
 
     static bool IsValidWord(const string& word) {
         // A valid word must not contain special characters
@@ -197,11 +211,14 @@ private:
             });
     }
 
-    bool CheckQuery(const string& raw_query) const {
-        if (!IsValidWord(raw_query)) { return false; }
-        if (raw_query[raw_query.size() - 1] == '-') { return false; }
+    bool CheckMinus(const string& raw_query) const {
+        if (raw_query[raw_query.size() - 1] == '-') {
+            return false;
+        }
         for (int i = 1; i < raw_query.size(); i++) {
-            if (raw_query[i - 1] == '-' && raw_query[i] == '-') { return false; }
+            if (raw_query[i - 1] == '-' && raw_query[i] == '-') {
+                return false;
+            }
         }
         return true;
     }
@@ -233,14 +250,17 @@ private:
         bool is_stop;
     };
 
-    QueryWord ParseQueryWord(string text) const {
+    optional<QueryWord> ParseQueryWord(string text) const {
+        if (!IsValidWord(text)) {
+            return nullopt;
+        }
         bool is_minus = false;
         // Word shouldn't be empty
         if (text[0] == '-') {
             is_minus = true;
             text = text.substr(1);
         }
-        return { text, is_minus, IsStopWord(text) };
+        return QueryWord{ text, is_minus, IsStopWord(text) };
     }
 
     struct Query {
@@ -248,20 +268,24 @@ private:
         set<string> minus_words;
     };
 
-    Query ParseQuery(const string& text) const {
+    optional<Query> ParseQuery(const string& text) const {
         Query query;
         for (const string& word : SplitIntoWords(text)) {
-            const QueryWord query_word = ParseQueryWord(word);
-            if (!query_word.is_stop) {
-                if (query_word.is_minus) {
-                    query.minus_words.insert(query_word.data);
-                }
-                else {
-                    query.plus_words.insert(query_word.data);
+            if (const auto query_word = ParseQueryWord(word)) {
+                if (!query_word->is_stop) {
+                    if (query_word->is_minus) {
+                        query.minus_words.insert(query_word->data);
+                    }
+                    else {
+                        query.plus_words.insert(query_word->data);
+                    }
                 }
             }
+            else {
+                return nullopt;
+            }
         }
-        return query;
+        return Query{ query };
     }
 
     // Existence required
