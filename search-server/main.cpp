@@ -191,6 +191,9 @@ public:
     }
 
     int GetDocumentId(int index) const {
+        if (index < 0 || index >= GetDocumentCount()) {
+            throw out_of_range("Not found document with this index");
+        }
         return doc_id.at(index);
     }
 
