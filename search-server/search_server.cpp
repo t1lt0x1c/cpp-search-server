@@ -98,10 +98,7 @@ int SearchServer::ComputeAverageRating(const vector<int>& ratings) {
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
+        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0); //в спринтах ранее я использовал accumulate, но тренажер в определенный момент вернул "свой" код :)
         return rating_sum / static_cast<int>(ratings.size());
     }
 

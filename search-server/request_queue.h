@@ -11,11 +11,8 @@ public:
     explicit RequestQueue(const SearchServer& search_server);
 
     template <typename DocumentPredicate>
-    std::vector<Document> AddFindRequest(const std::string& raw_query, DocumentPredicate document_predicate) {
-        auto doc = server.FindTopDocuments(raw_query, document_predicate);
-        Rec(doc.size());
-        return doc;
-    }
+    std::vector<Document> AddFindRequest(const std::string& raw_query,
+        DocumentPredicate document_predicate);
     std::vector<Document> AddFindRequest(const std::string& raw_query, DocumentStatus status);
     std::vector<Document> AddFindRequest(const std::string& raw_query);  
     int GetNoResultRequests() const;
@@ -28,8 +25,16 @@ private:
     std::deque<QueryResult> requests_;
     const static int min_in_day_ = 1440;  //полночь/кол-во тиков в цикле
     const SearchServer& server;
-    int time;   //текущее время
+    uint64_t time;   //текущее время
     int empty_querys;  //кол-во пустых запросов
        
     void Rec(int size_result);
 };
+
+template <typename DocumentPredicate>
+std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query,
+        DocumentPredicate document_predicate) {
+    auto doc = server.FindTopDocuments(raw_query, document_predicate);
+    Rec(doc.size());
+    return doc;
+}
