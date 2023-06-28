@@ -19,12 +19,13 @@ SearchServer::SearchServer()
             throw invalid_argument("Invalid document_id"s);
         }
         const auto words = SplitIntoWordsNoStop(document);
-
+        map<string, double> fr;
         const double inv_word_count = 1.0 / words.size();
         for (const string& word : words) {
             word_to_document_freqs_[word][document_id] += inv_word_count;
+            fr[word] += inv_word_count;
         }
-        documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
+        documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status, fr});
         document_ids_.push_back(document_id);
     }
 vector<Document> SearchServer::FindTopDocuments(const string& raw_query, DocumentStatus status) const {
@@ -42,8 +43,15 @@ vector<Document> SearchServer::FindTopDocuments(const string& raw_query, Documen
         return documents_.size();
     }
 
-    int SearchServer::GetDocumentId(int index) const {
+    /*int SearchServer::GetDocumentId(int index) const {
         return document_ids_.at(index);
+    }*/
+    vector<int>::const_iterator SearchServer::begin() {
+        return document_ids_.begin();
+    }
+
+    vector<int>::const_iterator SearchServer::end() {
+        return document_ids_.end();
     }
 
     tuple<vector<string>, DocumentStatus> SearchServer::MatchDocument(const string& raw_query,
@@ -70,6 +78,18 @@ vector<Document> SearchServer::FindTopDocuments(const string& raw_query, Documen
         }
         return {matched_words, documents_.at(document_id).status};
     }
+
+const map<string, double>& SearchServer::GetWordFrequencies(int document_id) const {
+    if(documents_.count(document_id) > 0){
+        auto it = documents_.find(document_id);
+        if(it != documents_.end()){
+            return it->second.freqs;
+        }
+    }
+    static const map<string, double> null;
+    return null;
+}
+
 bool SearchServer::IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
     }
@@ -98,7 +118,7 @@ int SearchServer::ComputeAverageRating(const vector<int>& ratings) {
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0); //в спринтах ранее я использовал accumulate, но тренажер в определенный момент вернул "свой" код :)
+        int rating_sum = std::accumulate(ratings.begin(), ratings.end(), 0);
         return rating_sum / static_cast<int>(ratings.size());
     }
 
@@ -135,3 +155,18 @@ SearchServer::Query SearchServer::ParseQuery(const string& text) const {
 double SearchServer::ComputeWordInverseDocumentFreq(const string& word) const {
         return log(GetDocumentCount() * 1.0 / word_to_document_freqs_.at(word).size());
     }
+void SearchServer::RemoveDocument(int document_id) { 
+    for (auto& [word, freq] : documents_.at(document_id).freqs) {
+        auto& freqs = word_to_document_freqs_.at(word);
+        freqs.erase(document_id);
+        if (freqs.empty()) {
+            word_to_document_freqs_.erase(word);
+        }
+    }
+    documents_.erase(document_id);
+    document_ids_.erase(remove(document_ids_.begin(), document_ids_.end(), document_id), document_ids_.end());
+}
+
+void AddDocument(SearchServer& search_server, int document_id, const string& document, DocumentStatus status, const vector<int>& ratings) {
+    search_server.AddDocument(document_id, document, status, ratings);
+} 
