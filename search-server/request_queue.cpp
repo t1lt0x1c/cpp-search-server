@@ -24,7 +24,7 @@ int RequestQueue::GetNoResultRequests() const {
         return empty_querys;
     }
 void RequestQueue::Rec(int size_result) {  //кол-во результатов запроса
-        time++;
+        ++time;
         if (time == min_in_day_) { //обнуляем время если оно достигает "полночи"
             time = 0;
         }

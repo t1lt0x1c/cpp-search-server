@@ -47,17 +47,17 @@ public:
     std::vector<Document> FindTopDocuments(const std::string& raw_query,
         DocumentPredicate document_predicate) const;
 
-    std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentStatus status) const ;
-
-    std::vector<Document> FindTopDocuments(const std::string& raw_query) const ;
+    std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentStatus status = DocumentStatus::ACTUAL) const ;
+    
+    //std::vector<Document> FindTopDocuments(const std::string& raw_query) const ;
 
     int GetDocumentCount() const ;
 
     //int GetDocumentId(int index) const ;
     
-    std::vector<int>::const_iterator begin();
+    std::set<int>::const_iterator begin();
     
-    std::vector<int>::const_iterator end();
+    std::set<int>::const_iterator end();
 
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, 
                                                         int document_id) const ;
@@ -73,7 +73,7 @@ private:
     const std::set<std::string> stop_words_;
     std::map<std::string, std::map<int, double>> word_to_document_freqs_;
     std::map<int, DocumentData> documents_;
-    std::vector<int> document_ids_;
+    std::set<int> document_ids_;
 
     bool IsStopWord(const std::string& word) const ;
 
@@ -115,7 +115,7 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_quer
 
     sort(matched_documents.begin(), matched_documents.end(),
         [](const Document& lhs, const Document& rhs) {
-            if (std::abs(lhs.relevance - rhs.relevance) < 1e-6) {
+            if (std::abs(lhs.relevance - rhs.relevance) < std::numeric_limits<double>::epsilon()) {
                 return lhs.rating > rhs.rating;
             }
             else {

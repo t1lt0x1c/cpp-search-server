@@ -26,31 +26,24 @@ SearchServer::SearchServer()
             fr[word] += inv_word_count;
         }
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status, fr});
-        document_ids_.push_back(document_id);
+        document_ids_.insert(document_id);
     }
-vector<Document> SearchServer::FindTopDocuments(const string& raw_query, DocumentStatus status) const {
+    vector<Document> SearchServer::FindTopDocuments(const string& raw_query, DocumentStatus status) const {
         return FindTopDocuments(
             raw_query, [status](int document_id, DocumentStatus document_status, int rating) {
                 return document_status == status;
             });
     }
 
-    vector<Document> SearchServer::FindTopDocuments(const string& raw_query) const {
-        return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
-    }
-
     int SearchServer::GetDocumentCount() const {
         return documents_.size();
     }
 
-    /*int SearchServer::GetDocumentId(int index) const {
-        return document_ids_.at(index);
-    }*/
-    vector<int>::const_iterator SearchServer::begin() {
+    set<int>::const_iterator SearchServer::begin() {
         return document_ids_.begin();
     }
 
-    vector<int>::const_iterator SearchServer::end() {
+    set<int>::const_iterator SearchServer::end() {
         return document_ids_.end();
     }
 
@@ -164,7 +157,7 @@ void SearchServer::RemoveDocument(int document_id) {
         }
     }
     documents_.erase(document_id);
-    document_ids_.erase(remove(document_ids_.begin(), document_ids_.end(), document_id), document_ids_.end());
+    document_ids_.erase(document_id);
 }
 
 void AddDocument(SearchServer& search_server, int document_id, const string& document, DocumentStatus status, const vector<int>& ratings) {
