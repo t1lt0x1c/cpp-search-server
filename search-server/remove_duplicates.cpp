@@ -3,13 +3,13 @@
 using namespace std;
  
 void RemoveDuplicates(SearchServer& search_server) {
-    set<vector<string>> unique_setwords;
+    set<vector<string_view>> unique_setwords;
     vector<int> duplicates;
      
     for (const int document_id : search_server) {
         if(!search_server.GetWordFrequencies(document_id).empty()){
             const auto& freqs = search_server.GetWordFrequencies(document_id);
-            vector<string> words;
+            vector<string_view> words;
             words.reserve(freqs.size());
             for (const auto& [word, _] : freqs) {
                 words.push_back(word);

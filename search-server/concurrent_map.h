@@ -17,7 +17,7 @@ using namespace std::string_literals;
 template <typename Key, typename Value>
 class ConcurrentMap {
 public:
-    static_assert(std::is_integral_v<Key>, "ConcurrentMap supports only integer keys"s);
+    static_assert(std::is_integral_v<Key>, "ConcurrentMap supports only integer keys");
     
     struct Bucket {
         //Bucket(size_t count) : map_(count), mutex_(count) {}

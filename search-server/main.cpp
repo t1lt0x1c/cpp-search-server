@@ -6,13 +6,15 @@
 #include <random>
 #include <string>
 #include <vector>
+
 using namespace std;
+
 string GenerateWord(mt19937& generator, int max_length) {
     const int length = uniform_int_distribution(1, max_length)(generator);
     string word;
     word.reserve(length);
     for (int i = 0; i < length; ++i) {
-        word.push_back(uniform_int_distribution('a', 'z')(generator));
+        word.push_back(uniform_int_distribution<int>('a', 'z')(generator));
     }
     return word;
 }
@@ -47,7 +49,7 @@ vector<string> GenerateQueries(mt19937& generator, const vector<string>& diction
     return queries;
 }
 template <typename ExecutionPolicy>
-void Test(string_view mark, const SearchServer& search_server, const vector<string>& queries, ExecutionPolicy&& policy) {
+void Test(string mark, const SearchServer& search_server, const vector<string>& queries, ExecutionPolicy&& policy) {
     LOG_DURATION(mark);
     double total_relevance = 0;
     for (const string_view query : queries) {

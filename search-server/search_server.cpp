@@ -95,7 +95,7 @@ tuple<vector<string_view>, DocumentStatus> SearchServer::MatchDocument(std::exec
         return {matched_words, documents_.at(document_id).status};
     }
     matched_words.reserve(query.plus_words.size());
-    copy_if(std::execution::par, query.plus_words.begin(), query.plus_words.end(), std::back_inserter(matched_words), [&, document_id](const string_view& word){
+    copy_if(std::execution::par, query.plus_words.begin(), query.plus_words.end(), matched_words.end(), [&, document_id](const string_view& word) {
         return word_freqs.count(word) > 0;
     });
     
