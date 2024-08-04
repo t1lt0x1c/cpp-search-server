@@ -7,3 +7,4 @@ struct Document {
     double relevance;
     int rating;
 };
+

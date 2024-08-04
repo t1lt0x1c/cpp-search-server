@@ -28,7 +28,7 @@ void RequestQueue::Rec(int size_result) {  //кол-во результатов 
         if (time == min_in_day_) { //обнуляем время если оно достигает "полночи"
             time = 0;
         }
-        if (!requests_.empty() && requests_.at(0).arrival_time == time) { //если время прибытия первого на выход запроса равно текущему времени => 
+        if (!requests_.empty() && static_cast<uint64_t>(requests_.at(0).arrival_time) == time) { //если время прибытия первого на выход запроса равно текущему времени =>
         //этот запрос находится здесь "сутки", следовательно его нужно удалять
             if (requests_.at(0).empty_query) {  //проверка на пустоту, счетчик уменьшает общее кол-во пустых запросов
                 empty_querys--;

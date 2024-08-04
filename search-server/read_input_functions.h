@@ -3,6 +3,8 @@
 #include "paginator.h"
 #include <iostream>
 
+#include <QString>
+
 
 std::ostream& operator<<(std::ostream& out, const Document& doc);
 
@@ -13,3 +15,5 @@ std::ostream& operator<<(std::ostream& out, IteratorRange<Iterator> page) {
     };
     return out;
 }
+
+QString ToQStr(const Document& doc);

@@ -18,7 +18,7 @@ SearchServer::SearchServer()
     : SearchServer(
             SplitIntoWords(""s))
 {}
- void SearchServer::AddDocument(int document_id, const string_view& document, DocumentStatus status,
+ void SearchServer::AddDocument(const int document_id, const string_view& document, DocumentStatus status,
                      const vector<int>& ratings) {
      
         if ((document_id < 0) || (documents_.count(document_id) > 0)) {

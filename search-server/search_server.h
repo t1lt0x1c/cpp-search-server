@@ -45,6 +45,7 @@ public:
     explicit SearchServer(const std::string& stop_words_text);
     
     explicit SearchServer(const std::string_view& stop_words_text);
+    //SearchServer& operator=(const SearchServer& server);
     
     explicit SearchServer();
 
@@ -89,6 +90,10 @@ public:
     void RemoveDocument(std::execution::sequenced_policy, int document_id);
     void RemoveDocument(std::execution::parallel_policy, int document_id);
     const std::map<std::string_view, double>& GetWordFrequencies(int document_id) const;
+
+    DocumentStatus StrToStatus(const std::string& status) const {
+        return str_to_status.at(status);
+    }
     
 private:
     struct DocumentData {
@@ -100,7 +105,12 @@ private:
     std::map<std::string_view, std::map<int, double>> word_to_document_freqs_;
     std::map<int, DocumentData> documents_;
     std::set<int> document_ids_;
-    std::deque<std::string> storage; 
+    std::deque<std::string> storage;
+
+    const std::map<std::string, DocumentStatus> str_to_status = {{"ACTUAL"s, DocumentStatus::ACTUAL},
+                                                                {"IRRELEVANT"s,DocumentStatus::IRRELEVANT},
+                                                                {"BANNED"s,DocumentStatus::BANNED},
+                                                                 {"REMOVED"s,DocumentStatus::REMOVED}};
     
 
     bool IsStopWord(const std::string_view& word) const ;
@@ -146,8 +156,8 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string_view& raw
 
 template <typename ExecutionPolicy>
 std::vector<Document> SearchServer::FindTopDocuments(ExecutionPolicy&& policy, const std::string_view& raw_query,  DocumentStatus status) const {
-        return FindTopDocuments(policy, 
-            raw_query, [status](int document_id, DocumentStatus document_status, int rating) {
+        return FindTopDocuments(policy,
+            raw_query, [status]([[maybe_unused]]int document_id, DocumentStatus document_status, [[maybe_unused]]int rating) {
                 return document_status == status;
             });
     }       
