@@ -7,15 +7,17 @@
 #include <QFileDialog>
 #include <QComboBox>
 
-#include "QLogger.h"
-
 #include <memory>
 #include <fstream>
 
-#include <search_server.h>
-#include <read_input_functions.h>
-#include <json_reader.h>
-#include "log_duration.h"
+#include "search-server/search_server.h"
+#include "search-server/string_processing.h"
+#include <search-server/read_input_functions.h>
+#include <json_libs/json_reader.h>
+#include "log_libs/log_duration.h"
+#include "log_libs/qlogger.h"
+#include "WidgetPopulator.h"
+#include "dialogadddoc.h"
 
 
 
@@ -41,11 +43,14 @@ private slots:
     void on_import_json_triggered();
 
     void on_search_button_clicked();
+    void on_add_doc_triggered();
 
 private:
-    Ui::MainWindow *ui;
     std::shared_ptr<SearchServer> server;
     QLogger logger;
+private: //ui
+    Ui::MainWindow *ui;
+private: //widgets
     QTextEdit* outlog;
     QWidget* menu_add;
     QAction* remove_doc;

@@ -58,3 +58,23 @@ vector<string_view> SplitIntoWords(const string_view& str) {
 
     return result;
 }
+
+vector<int> SplitRating(QString str) {
+    vector<int> result;
+    auto std_str = str.toStdString();
+    std::string word;
+    for (const char c : std_str) {
+        if (c == ' ') {
+            if (!word.empty()) {
+                result.push_back(std::stoi(word));
+                word.clear();
+            }
+        } else {
+            word += c;
+        }
+    }
+    if (!word.empty()) {
+        result.push_back(std::stoi(word));
+    }
+    return result;
+}

@@ -14,9 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
     search_result = findChild<QTextEdit*>("search_result");
     line_query = findChild<QLineEdit*>("line_query");
     status = findChild<QComboBox*>("status_box");
-    QStringList statuses;
-    statuses << "ACTUAL" << "IRRELEVANT" << "BANNED" << "REMOVED";
-    status->addItems(statuses);
+    StatusDoc(status);
 }
 
 MainWindow::~MainWindow()
@@ -72,10 +70,17 @@ void MainWindow::on_search_button_clicked()
         } else {
             search_result->append("Ничего не найдено по запросу: " + *query);
         }
-
         logger.CreateLog("Поиск по запросу: " + *query);
     } else {
         search_result->append("Пустой запрос");
     }
+}
+
+void MainWindow::on_add_doc_triggered()
+{
+    DialogAddDoc* w = new DialogAddDoc(this);
+    w->exec();
+    server.get()->AddDocument(w->GetData().id, w->GetData().text, server.get()->StrToStatus(w->GetData().status), w->GetData().rating);
+    logger.CreateLog("Добавлен документ с id: " + w->GetData().id);
 }
 

@@ -4,6 +4,8 @@
 #include <set>
 #include <iostream>
 
+#include <QString>
+
 
 std::string ReadLine();
 int ReadLineWithNumber();
@@ -19,3 +21,4 @@ std::set<std::string, std::less<>> MakeUniqueNonEmptyStrings(const StringContain
     return non_empty_strings;
 }
 std::vector<std::string_view> SplitIntoWords(const std::string_view& str);
+std::vector<int> SplitRating(QString str);

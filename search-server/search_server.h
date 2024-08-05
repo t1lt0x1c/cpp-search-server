@@ -1,6 +1,6 @@
 #pragma once
 
-#include "log_duration.h"
+#include "log_libs/log_duration.h"
 #include "document.h"
 #include "string_processing.h"
 #include "concurrent_map.h"

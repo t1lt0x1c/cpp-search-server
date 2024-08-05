@@ -1,9 +1,9 @@
 #ifndef JSON_READER_H
 #define JSON_READER_H
 
-#include "search_server.h"
+#include "search-server/search_server.h"
 #include "json_builder.h"
-#include "log_duration.h"
+#include "log_libs/log_duration.h"
 #include <QMessageBox>
 
 #include <QString>

@@ -1,8 +1,5 @@
 #include "mainwindow.h"
-#include "search_server.h"
-
-#include <plog/Log.h>
-#include <plog/Initializers/RollingFileInitializer.h>
+#include "search-server/search_server.h"
 
 #include <memory>
 

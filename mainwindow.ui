@@ -172,7 +172,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
      <property name="title">
       <string>Добавить документ</string>
      </property>
-     <addaction name="action_3"/>
+     <addaction name="add_doc"/>
      <addaction name="import_json"/>
     </widget>
     <addaction name="menu_add"/>
@@ -198,9 +198,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <string>Сервер со стоп словами</string>
    </property>
   </action>
-  <action name="action_3">
+  <action name="add_doc">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>Составить параметры</string>

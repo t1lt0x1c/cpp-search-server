@@ -11,6 +11,7 @@ CONFIG += c++17
 # Путь к заголовочным файлам
 
 SOURCES += \
+    dialogadddoc.cpp \
     search-server/document.cpp \
     json_libs/json.cpp \
     json_libs/json_reader.cpp \
@@ -26,6 +27,8 @@ SOURCES += \
     tests/test_example_functions.cpp
 
 HEADERS += \
+    WidgetPopulator.h \
+    dialogadddoc.h \
     search-server/concurrent_map.h \
     search-server/document.h \
     json_libs/json.h \
@@ -45,6 +48,7 @@ HEADERS += \
     tests/test_framework.h
 
 FORMS += \
+    dialogadddoc.ui \
     mainwindow.ui
 
 # Default rules for deployment.
