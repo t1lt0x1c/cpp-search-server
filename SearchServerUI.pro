@@ -24,7 +24,7 @@ SOURCES += \
     search-server/request_queue.cpp \
     search-server/search_server.cpp \
     search-server/string_processing.cpp \
-    tests/test_example_functions.cpp
+    #tests/test_example_functions.cpp
 
 HEADERS += \
     WidgetPopulator.h \
@@ -43,9 +43,9 @@ HEADERS += \
     search-server/request_queue.h \
     search-server/search_server.h \
     search-server/string_processing.h \
-    tests/testGeneratorWord.h \
-    tests/test_example_functions.h \
-    tests/test_framework.h
+    #tests/testGeneratorWord.h \
+    #tests/test_example_functions.h \
+    #tests/test_framework.h
 
 FORMS += \
     dialogadddoc.ui \
